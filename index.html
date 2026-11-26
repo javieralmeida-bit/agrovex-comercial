@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agrovex Comercial</title>
+<meta name="theme-color" content="#1B3A27">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agrovex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: herramienta de terreno, cercana y ordenada; habla como un técnico agrícola.
+   IDEA: la libreta de campo del técnico Agrovex: lo que toca hoy, cada productor, cada compromiso.
+   PICTURE: la lista "Hoy toca" y el tablero de etapas son la imagen; el logo encabeza cada página.
+   COLOUR and TYPE: verde hoja #3F8E49, verde bosque #1B3A27, ocre #CB7818 y miel #F6AE44 sobre papel #F5F2EA; Lora para títulos, Inter para el resto.
+   LAYOUT: barra lateral verde con logo en escritorio; barra inferior en el teléfono; contenido hasta 1180px. */
+:root{color-scheme:light dark;
+--bg:light-dark(#F5F2EA,#0F1E15);--paper:light-dark(#FCFBF7,#17291D);--ink:light-dark(#22302A,#E8EFE6);--muted:light-dark(#5B685F,#A9B8AC);
+--line:light-dark(#E2DDD0,#2A3F31);--forest:#1B3A27;--leaf:#3F8E49;--leafs:light-dark(#E4ECDD,#21402B);--ocre:#CB7818;--ocret:light-dark(#8A4E1C,#E9A65A);--honey:#F6AE44;--sand:light-dark(#F1E3CF,#3A2C19);
+--red:light-dark(#B3261E,#F08A80);--reds:light-dark(#FBE2DF,#3D1B18);--amber:light-dark(#8A5A00,#F2C46B);--ambers:light-dark(#FDF0D2,#3A2E12)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,Arial,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Lora,Georgia,serif;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4vw,40px)}h2{font-size:22px}h3{font-size:17px;font-family:Inter,Arial,sans-serif;font-weight:700}
+button,input,select,textarea{font:inherit;font-size:16px;color:inherit}
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+nav.side{background:var(--forest);color:#FCFBF7;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+nav.side .brand{padding:4px 8px 18px;border-bottom:1px solid #2F5A3A;margin-bottom:10px}
+nav.side .brand img{width:170px;display:block}
+nav.side .brand small{display:block;color:#BFD3C4;font-size:13px;margin-top:6px}
+nav a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;color:#DCE7DA;text-decoration:none;font-weight:500;min-height:44px}
+nav a svg{width:22px;height:22px;flex:none}
+nav a:hover{background:#24492F}nav a.on{background:var(--leaf);color:#fff}
+nav.side .foot{margin-top:auto;font-size:13px;color:#8FB09A;padding:8px}
+main{padding:clamp(18px,3vw,40px);max-width:1180px;width:100%}
+.top{display:flex;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.top .mark{width:46px;height:46px;flex:none}
+.top .tt{flex:1 1 260px}
+.mbar{display:none}
+.top p{margin:4px 0 0;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:10px 16px;min-height:44px;font-weight:600;cursor:pointer;background:var(--leaf);color:#fff;display:inline-flex;align-items:center;gap:8px}
+.btn.alt{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+.btn.oc{background:var(--ocre)}.btn.sm{min-height:36px;padding:6px 12px;font-size:14px}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--honey);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.kpi b{display:block;font-size:clamp(24px,3vw,32px);font-family:Lora,Georgia,serif;color:var(--forest)}
+:root[data-theme=dark] .kpi b{color:#CFE3CC}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .kpi b{color:#CFE3CC}}
+.kpi span{color:var(--muted);font-size:14px}
+.kpi.warn b{color:var(--red)}.kpi.oc b{color:var(--ocret)}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:18px}
+.panel>header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;padding:14px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .who{font-weight:700}.item .sub{color:var(--muted);font-size:14px}
+.item .amt{font-weight:700;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--leafs);color:var(--forest);white-space:nowrap}
+:root[data-theme=dark] .tag{color:#CFE3CC}
+.tag.r{background:var(--reds);color:var(--red)}.tag.a{background:var(--ambers);color:var(--amber)}.tag.o{background:var(--sand);color:var(--ocret)}
+.empty{color:var(--muted);padding:18px 4px;text-align:center}
+.draft{grid-column:1/-1;background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:12px;white-space:pre-wrap;font-size:15px}
+.board{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity}
+.col{flex:0 0 250px;background:var(--leafs);border-radius:16px;padding:10px;scroll-snap-align:start}
+.col h3{display:flex;justify-content:space-between;padding:4px 6px 10px;font-size:14px;text-transform:none}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;width:100%;text-align:left;display:block}
+.card:hover{border-color:var(--leaf)}
+.card .m{font-weight:700;font-variant-numeric:tabular-nums}
+.card .d{font-size:13px;color:var(--muted)}
+.card.late{border-left:5px solid var(--red)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input,.toolbar select,#pSel{min-height:44px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--paper)}
+.toolbar input{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:13px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--leafs)}
+.bars .row{display:grid;grid-template-columns:150px minmax(0,1fr) 110px;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+.bars .track{background:var(--leafs);border-radius:8px;height:22px;overflow:hidden}
+.bars .fill{height:100%;background:var(--leaf);border-radius:8px}
+.bars .fill.o{background:var(--ocre)}
+.bars .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px}
+.sheet h3{margin:18px 0 6px;color:var(--ocret)}
+.sheet ul,.sheet ol{margin:4px 0;padding-left:22px}
+.sheet .head{display:flex;gap:14px;align-items:center;border-bottom:2px solid var(--ocre);padding-bottom:12px}
+.sheet .head img{width:130px}
+.guide details{background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;padding:0 16px}
+.guide summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:44px}
+.guide details p,.guide details li{color:var(--ink)}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding:6px 0 10px 46px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:4px;width:32px;height:32px;border-radius:50%;background:var(--leaf);color:#fff;font-weight:700;display:grid;place-items:center}
+.hero{background:var(--forest);color:#FCFBF7;border-radius:22px;padding:24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;margin-bottom:22px;position:relative;overflow:hidden}
+.hero h1{color:#FCFBF7}.hero p{color:#BFD3C4;margin:8px 0 0}
+.hero img{width:200px}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--ocre)}
+.overlay{position:fixed;inset:0;background:rgba(10,20,14,.55);display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;z-index:50;overflow-y:auto}
+.overlay.show{display:flex}
+.modal{background:var(--paper);border-radius:20px;width:min(680px,100%);padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.modal header svg{width:34px;height:34px;flex:none}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600;color:var(--muted)}
+.form .full{grid-column:1/-1}
+.form input,.form select,.form textarea{border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-height:44px;background:var(--bg);font-weight:400;color:var(--ink)}
+.form textarea{min-height:70px;resize:vertical}
+.alert{border-radius:12px;padding:10px 14px;font-size:14px;margin:8px 0}
+.alert.r{background:var(--reds);color:var(--red)}.alert.a{background:var(--ambers);color:var(--amber)}.alert.g{background:var(--leafs)}
+.login{max-width:420px;margin:6vh auto;background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:28px;text-align:center;border-bottom:6px solid var(--ocre)}.login img{width:220px;margin-bottom:10px}.login .form{text-align:left;margin-top:16px}.login .btn{justify-content:center}
+.mfoot{display:flex;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;padding:10px 18px;border-radius:24px;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none}
+.toast.show{opacity:1}
+.status{font-size:13px;color:var(--muted)}
+nav.tabs{display:none}
+body.out nav,body.out .mbar{display:none!important}body.out .app{grid-template-columns:minmax(0,1fr)}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){
+.app{grid-template-columns:minmax(0,1fr)}nav.side{display:none}
+
+.mbar{display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 18px 12px;background:var(--paper);border-bottom:3px solid var(--ocre);position:sticky;top:0;z-index:30}.mbar img{height:34px}.mbar span{font-size:13px;color:var(--muted)}
+nav.tabs{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--forest);z-index:40;justify-content:space-around;padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
+nav.tabs a{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;color:#DCE7DA;border-radius:10px;flex:1}
+nav.tabs a svg{width:22px;height:22px}
+main{padding-bottom:96px}
+.hero{grid-template-columns:minmax(0,1fr)}.hero img{width:150px;order:-1}
+.form{grid-template-columns:minmax(0,1fr)}
+.bars .row{grid-template-columns:100px minmax(0,1fr) 90px}
+}
+@media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--muted);font-size:13px}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:no-preference){.view{animation:in .35s ease-out}@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}}
+@media print{nav,.btn,.toolbar{display:none!important}.app{display:block}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="iso" viewBox="0 0 64 64">
+    <path d="M38 22c10-3 20 2 22 10-2 10-12 17-24 15l-6 8 1-9c-6-6-3-21 7-24z" fill="#F6AE44"/>
+    <path d="M47 30c-5 3-9 7-12 13" stroke="#CB7818" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M6 10c14-6 30 0 34 13 3 12-5 23-18 24l-9 11 1-12C4 40 0 22 6 10z" fill="#3F8E49"/>
+    <path d="M11 15c5 9 10 18 14 27" stroke="#FCFBF7" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </symbol>
+</svg>
+<div class="app">
+  <nav class="side" aria-label="Secciones">
+    <div class="brand"><img src="logo-white.png" alt="Agrovex"><small>Sistema Comercial</small></div>
+    <div id="navSide"></div>
+    <div class="foot"><span id="who"></span><br><button class="btn sm alt" id="logout" style="margin-top:8px;display:none">Cerrar sesión</button><br><br>La app prepara.<br>Agrovex decide y envía.</div>
+  </nav>
+  <div><header class="mbar"><img src="logo-color.png" alt="Agrovex"><button class="btn sm alt" id="logoutM" style="display:none">Salir</button></header><main id="main"><div class="empty">Cargando…</div></main></div>
+</div>
+<nav class="tabs" id="navTabs" aria-label="Secciones"></nav>
+<div class="overlay" id="ov" role="dialog" aria-modal="true"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+{
+const ICONS={
+inicio:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+lunes:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15l2 2 4-4"/>',
+tablero:'<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/>',
+clientes:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-4 3.4-6 6.5-6s5.7 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.2 2.6 3.5 6"/>',
+visita:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+cierre:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+guia:'<path d="M4 4h7a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H4zM20 4h-3a3 3 0 0 0-3 3"/><path d="M20 4v13.5h-6"/>'};
+const ico=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+ICONS[k]+'</svg>';
+const PAGES=[['inicio','Inicio'],['lunes','Lunes'],['tablero','Tablero'],['clientes','Clientes'],['visita','Visita'],['cierre','Cierre'],['guia','Guía']];
+const ETAPAS=['prospecto','consulta','visita realizada','ensayo en curso','cotización enviada','seguimiento','ganada','perdida','pausada'];
+const ABIERTAS=ETAPAS.slice(0,6);
+const COMUNAS=['Malloa','San Vicente de Tagua Tagua','Rengo','Quinta de Tilcoco','Doñihue','Coltauco','Peumo','Otra'];
+const RESP=['Carlos Oleas','Javier Almeida'];
+const MOTIVOS=['precio','plazo de pago','compró a otro','no contestó más','no era su temporada','producto no disponible','resultado de ensayo','deuda vencida','otro'];
+const FUENTES=['visita','WhatsApp','llamada','correo','referido','otro'];
+
+const S={db:null,sample:null,cli:[],ops:[],ready:false,err:'',drafts:{},periodo:null,visita:''};
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clp=n=>'$'+Math.round(+n||0).toLocaleString('es-CL');
+const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
+const today=()=>iso(new Date());
+const pd=s=>s?new Date(s+'T12:00:00'):null;
+const days=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
+const fmt=s=>s?pd(s).toLocaleDateString('es-CL',{day:'2-digit',month:'short'}):'—';
+function bdays(a,b){let n=0,d=pd(a),e=pd(b);if(!d||!e)return 0;while(d<e){d.setDate(d.getDate()+1);const w=d.getDay();if(w&&w<6)n++}return n}
+function periodoDe(s){const d=pd(s);if(!d)return '';let y=d.getFullYear(),m=d.getMonth()+1;if(d.getDate()>=26){m++;if(m>12){m=1;y++}}return y+'-'+String(m).padStart(2,'0')}
+function rangoPeriodo(p){const [y,m]=p.split('-').map(Number);const a=new Date(y,m-2,26),b=new Date(y,m-1,25);return fmtL(a)+' al '+fmtL(b)}
+const fmtL=d=>d.toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'});
+const cliOf=o=>S.cli.find(c=>c.id===o.clienteId)||null;
+const nomCli=o=>{const c=cliOf(o);return c?(c.nombre||c.id):(o.clienteId||'Sin cliente')};
+const abierta=o=>ABIERTAS.includes(o.etapa);
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200)}
+
+/* ---------- datos ---------- */
+function rows(s){const a=Array.isArray(s)?s:(s&&(s.docs||s.items||s.rows||s.documents))||[];return a.map(d=>{const data=typeof d.data==='function'?d.data():(d.data&&typeof d.data==='object'?d.data:d);return Object.assign({},data,{id:d.id||(d.path||'').split('/').pop()||data.id})})}
+async function save(col,id,data){if(!S.db){toast('Sin conexión a la base de datos');return false}try{await S.db.doc(col+'/'+id).set(data);return true}catch(e){toast('No se pudo guardar: '+(e.message||e.code||'error'));return false}}
+function boot(){
+  const cfg=window.AGROVEX_FIREBASE;
+  if(!window.firebase||!cfg||!cfg.apiKey||cfg.apiKey.startsWith('PEGAR')){S.err='Falta configurar Firebase (archivo config.js).';S.ready=true;render();return}
+  firebase.initializeApp(cfg);
+  const auth=firebase.auth(),db=firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  S.auth=auth;S.db=db;
+  window.addEventListener('online',()=>{S.offline=false;render()});window.addEventListener('offline',()=>{S.offline=true;render()});S.offline=!navigator.onLine;
+  auth.onAuthStateChanged(u=>{
+    S.user=u;(S.unsub||[]).forEach(f=>f());S.unsub=[];
+    for(const id of ['logout','logoutM'])$(id).style.display=u?'':'none';
+    $('who').textContent=u?u.email:'';
+    if(!u){S.ready=true;S.cli=[];S.ops=[];render();return}
+    S.ready=false;render();
+    let a=false,b=false;const done=()=>{if(a&&b){S.ready=true}render()};
+    const err=e=>{S.err=e&&e.code==='permission-denied'?'Tu usuario no tiene permiso para ver los datos. Pide al GG que te agregue.':'Error leyendo datos: '+(e&&e.message||'');S.ready=true;render()};
+    S.unsub.push(db.collection('clientes').onSnapshot(sn=>{S.cli=rows(sn).sort((x,y)=>String(x.id).localeCompare(y.id));S.pend=sn.metadata&&sn.metadata.hasPendingWrites;a=true;done()},err));
+    S.unsub.push(db.collection('ops').onSnapshot({includeMetadataChanges:true},sn=>{S.ops=rows(sn);S.pend=sn.metadata&&sn.metadata.hasPendingWrites;b=true;done()},err));
+  });
+}
+function vLogin(){
+  return '<div class="login"><img src="logo-color.png" alt="Agrovex"><h1>Sistema Comercial</h1><p class="status">Ingresa con tu correo de Agrovex.</p><form id="fLogin" class="form" style="grid-template-columns:1fr"><label>Correo<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="pass" type="password" autocomplete="current-password" required></label><button class="btn" type="submit">Entrar</button><button class="btn alt" type="button" id="reset">Olvidé mi contraseña</button></form><p class="status" id="lmsg"></p></div>';
+}
+function csv(name,head,rowsArr){
+  const q=v=>{v=v==null?'':String(v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const txt='\ufeff'+[head].concat(rowsArr).map(r=>r.map(q).join(';')).join('\r\n');
+  const url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=name+'_'+today()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function exportar(){
+  csv('Agrovex_oportunidades',['ID','Fecha alta','Código cliente','Cliente','Comuna','Cultivo','Ha cultivo','Necesidad','Producto','Monto CLP','Etapa','Responsable','Último contacto','Fecha acordada','Ventana aplicación','Toques','Próximo paso','Fuente','Fecha cierre','Monto cierre','Ha captadas','Pago','Motivo pérdida','Período','Notas'],
+    S.ops.map(o=>{const c=cliOf(o)||{},k=o.cierre||{};return [o.id,o.fechaAlta,o.clienteId,c.nombre,c.comuna,o.cultivo,o.haCultivo,o.necesidad,o.producto,o.monto,o.etapa,o.responsable,o.ultimoContacto,o.fechaAcordada,o.ventana,o.toques,o.proximoPaso,o.fuente,k.fecha,k.monto,k.ha,k.pago,k.motivo,k.fecha?periodoDe(k.fecha):'',o.notas]}));
+  setTimeout(()=>csv('Agrovex_clientes',['Código','Nombre','Comuna','Sector','Ha','Cultivos','Temporada','Compras contado','Condición pago','Deuda vencida','Tono','Contactable','Quién decide','Notas'],
+    S.cli.map(c=>[c.id,c.nombre,c.comuna,c.sector,c.ha,c.cultivos,c.temporada,c.comprasContado,c.pago,c.deuda?'sí':'no',c.tono,c.contactable===false?'no contactar':'sí',c.decide,c.notas])),600);
+  toast('Descargando 2 archivos para Excel');
+}
+
+/* ---------- reglas del Seguidor ---------- */
+function seguidor(){
+  const t=today(),fin=iso(new Date(pd(t).getTime()+(7-((pd(t).getDay()+6)%7)-1)*864e5));
+  const lista=[],sinPaso=[],decision=[];
+  for(const o of S.ops){
+    if(!abierta(o))continue;
+    const c=cliOf(o);
+    if(c&&c.contactable===false)continue;
+    if(c&&c.deuda){decision.push({o,motivo:'Deuda vencida: no cotizar ni dar crédito sin decisión del GG'});continue}
+    const dsc=o.ultimoContacto?days(o.ultimoContacto,t):null,bd=o.ultimoContacto?bdays(o.ultimoContacto,t):0,tq=+o.toques||0;
+    const ventana=o.ventana&&days(t,o.ventana)>=0&&days(t,o.ventana)<=7;
+    let it=null;
+    if(o.fechaAcordada&&o.fechaAcordada<=fin){it={tipo:o.fechaAcordada<t?'Compromiso vencido':'Compromiso esta semana',cls:o.fechaAcordada<t?'r':'a',accion:o.etapa==='ensayo en curso'?'evaluacion':'compromiso'}}
+    else if(o.etapa==='consulta'&&bd>2){it={tipo:'Consulta sin respuesta',cls:'r',accion:'consulta'}}
+    else if(!o.fechaAcordada&&['cotización enviada','seguimiento'].includes(o.etapa)&&o.ultimoContacto){
+      if(tq>=3)decision.push({o,motivo:'3 toques sin respuesta: proponer pasar a pausada (no contestó más)'});
+      else if(tq===0&&bd>=3)it={tipo:'1er toque',cls:'',accion:'toque1'};
+      else if(tq===1&&dsc>=10)it={tipo:'2do toque',cls:'',accion:'toque2'};
+      else if(tq===2&&dsc>=20)it={tipo:'3er toque (último)',cls:'o',accion:'toque3'};
+    }
+    if(it){it.o=o;it.ventana=ventana;lista.push(it)}
+    if(!o.fechaAcordada&&!(o.proximoPaso||'').trim())sinPaso.push(o);
+  }
+  const by=(a,b)=>(+b.o.monto||0)-(+a.o.monto||0);
+  lista.sort(by);decision.sort(by);sinPaso.sort((a,b)=>(+b.monto||0)-(+a.monto||0));
+  const abiertas=S.ops.filter(abierta).length;
+  return {lista,sinPaso,decision,abiertas,conPaso:abiertas-sinPaso.length-S.ops.filter(o=>abierta(o)&&o.fechaAcordada&&o.fechaAcordada<t).length};
+}
+function plantilla(it){
+  const o=it.o,c=cliOf(o)||{},n=c.nombre||'',tu=c.tono==='tú',f=o.ultimoContacto?fmt(o.ultimoContacto):'';
+  const s=(u,t)=>tu?t:u,h='Hola'+(n?' '+n:'')+', ';
+  const v=it.ventana&&o.ventana?(s(' Recuerde',' Recuerda')+' que su ventana de aplicación registrada es hasta el '+fmt(o.ventana)+'.'):'';
+  switch(it.accion){
+  case 'toque1':return h+s('le escribo para confirmar que le llegó la cotización','te escribo para confirmar que te llegó la cotización')+(f?' del '+f:'')+'. '+s('Si quiere la revisamos juntos o ajusto algo, me avisa.','Si quieres la revisamos juntos o ajusto algo, me avisas.')+v;
+  case 'toque2':return h+s('le comparto un dato útil sobre','te comparto un dato útil sobre')+' '+(o.producto||'lo que conversamos')+(o.cultivo?' para su '+o.cultivo:'')+': [agregar dato técnico de la ficha]. '+s('¿Le acomoda que lo veamos en terreno esta semana?','¿Te acomoda que lo veamos en terreno esta semana?')+v;
+  case 'toque3':return h+s('no quiero ser insistente, así que este es mi último mensaje por la cotización','no quiero ser insistente, así que este es mi último mensaje por la cotización')+(f?' del '+f:'')+'. '+s('Si hoy no es el momento, la dejo en pausa y quedo a disposición. Si cambia algo, me escribe por acá.','Si hoy no es el momento, la dejo en pausa y quedo atento. Si cambia algo, me escribes por acá.');
+  case 'consulta':return h+s('gracias por su consulta','gracias por tu consulta')+(o.necesidad?' sobre '+o.necesidad:'')+'. '+s('Para recomendarle bien, ¿le parece si paso por el predio','Para recomendarte bien, ¿te parece si paso por el predio')+' [día]?';
+  case 'evaluacion':return h+s('¿le acomoda que pasemos el','¿te acomoda que pasemos el')+' '+fmt(o.fechaAcordada)+' a evaluar juntos el ensayo'+(o.producto?' de '+o.producto:'')+'?';
+  default:return h+s('como quedamos, le escribo por','como quedamos, te escribo por')+' '+(o.proximoPaso||o.producto||'lo conversado')+'. '+s('¿Cómo lo ve?','¿Cómo lo ves?')+v;
+  }
+}
+const REGLAS='Reglas de Agrovex: no inventes datos, precios, descuentos, plazos ni urgencias; la única urgencia válida es una fecha registrada (fecha acordada o ventana de aplicación). Nunca recomiendes dosis, mezclas ni carencias. Mensaje corto para WhatsApp, español de Chile, cercano y profesional, sin fórmulas de venta ni emojis. Máximo 3 toques por oportunidad.';
+async function redactar(id){
+  const it=seguidor().lista.find(x=>x.o.id===id);if(!it)return;
+  S.drafts[id]=plantilla(it);render();
+  if(!S.sample){toast('Borrador de plantilla listo');return}
+  const o=it.o,c=cliOf(o)||{};
+  const datos={tipo:it.tipo,nombre:c.nombre,tono:c.tono||'usted',comuna:c.comuna,cultivo:o.cultivo,hectareas:o.haCultivo,necesidad:o.necesidad,producto:o.producto,etapa:o.etapa,ultimo_contacto:o.ultimoContacto,fecha_acordada:o.fechaAcordada,ventana_aplicacion:o.ventana,toques:o.toques,proximo_paso:o.proximoPaso,notas:o.notas};
+  try{
+    S.drafts[id]='Redactando…';render();
+    const r=await S.sample('Eres el Seguidor del área comercial de Agrovex, distribuidora técnica de insumos agrícolas en O\'Higgins, Chile. Redacta UN mensaje de seguimiento para un productor.\n'+REGLAS+'\nTrata al cliente de '+(c.tono==='tú'?'tú':'usted')+'. Si falta un dato, no lo inventes: escribe [SIN DATO]. Responde solo con el texto del mensaje.\nDatos: '+JSON.stringify(datos),{modelTier:'quick'});
+    S.drafts[id]=(r&&r.text||'').trim()||plantilla(it);
+  }catch(e){S.drafts[id]=plantilla(it);if(e&&e.code==='not_granted')S.sample=null}
+  render();
+}
+async function copiar(t){try{await navigator.clipboard.writeText(t);toast('Copiado: pégalo en WhatsApp')}catch(e){toast('Selecciona el texto y cópialo')}}
+async function marcarEnviado(id){
+  const o=S.ops.find(x=>x.id===id);if(!o)return;
+  const t=today(),tq=Math.min(3,(+o.toques||0)+1);
+  const hist=(o.historial||[]).concat([{fecha:t,nota:'Toque '+tq+' enviado'}]);
+  const d=Object.assign({},o,{ultimoContacto:t,toques:tq,historial:hist,etapa:o.etapa==='cotización enviada'?'seguimiento':o.etapa});
+  if(o.fechaAcordada&&o.fechaAcordada<=t)d.fechaAcordada='';
+  delete d.id;
+  if(await save('ops',id,d)){delete S.drafts[id];toast('Registrado: toque '+tq);if(!d.fechaAcordada)editarOp(id,'Anota la próxima fecha acordada, si la hay')}
+}
+
+/* ---------- vistas ---------- */
+function topbar(title,sub,extra){return '<div class="top"><svg class="mark" aria-hidden="true"><use href="#iso"/></svg><div class="tt"><h1>'+title+'</h1>'+(sub?'<p>'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
+function vInicio(){
+  const sg=seguidor(),t=today(),per=periodoDe(t);
+  const abiertas=S.ops.filter(abierta),monto=abiertas.reduce((a,o)=>a+(+o.monto||0),0);
+  const venc=abiertas.filter(o=>o.fechaAcordada&&o.fechaAcordada<t).length;
+  const ha=S.ops.filter(o=>o.etapa==='ganada'&&o.cierre&&periodoDe(o.cierre.fecha)===per).reduce((a,o)=>a+(+o.cierre.ha||0),0);
+  const h=new Date().getHours(),sal=h<12?'Buenos días':h<20?'Buenas tardes':'Buenas noches';
+  let html='<div class="hero"><div><h1>'+sal+'</h1><p>'+new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})+' · '+sg.lista.length+' seguimientos y '+sg.decision.length+' decisiones esperan esta semana.</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px"><button class="btn oc" data-go="lunes">Abrir el lunes</button><button class="btn alt" data-new="op">Nueva oportunidad</button><button class="btn alt" data-new="cli">Nuevo cliente</button></div></div><img src="logo-white.png" alt="Agrovex"></div>';
+  html+='<div class="kpis"><div class="kpi"><b>'+clp(monto)+'</b><span>monto abierto en '+abiertas.length+' oportunidades</span></div><div class="kpi '+(venc?'warn':'')+'"><b>'+venc+'</b><span>compromisos vencidos</span></div><div class="kpi '+(sg.sinPaso.length?'oc':'')+'"><b>'+sg.sinPaso.length+'</b><span>oportunidades sin próximo paso</span></div><div class="kpi"><b>'+ha.toLocaleString('es-CL',{maximumFractionDigits:1})+' ha</b><span>captadas en el período '+per+'</span></div></div>';
+  html+='<div class="grid2"><section class="panel"><header><h2>Hoy toca</h2><button class="btn sm alt" data-go="lunes">Ver todo</button></header>'+(sg.lista.length?sg.lista.slice(0,5).map(it=>'<div class="item"><div><div class="who">'+esc(nomCli(it.o))+'</div><div class="sub">'+esc(it.o.producto||it.o.necesidad||it.o.etapa)+'</div></div><div class="amt">'+clp(it.o.monto)+'<br><span class="tag '+it.cls+'">'+esc(it.tipo)+'</span></div></div>').join(''):'<div class="empty">Nada pendiente para hoy. Buen momento para salir a prospectar.</div>')+'</section>';
+  html+='<section class="panel"><header><h2>Por etapa</h2></header><div class="bars">'+ABIERTAS.map(e=>{const n=abiertas.filter(o=>o.etapa===e).length;const mx=Math.max(1,...ABIERTAS.map(x=>abiertas.filter(o=>o.etapa===x).length));return '<div class="row"><span>'+e+'</span><div class="track"><div class="fill" style="width:'+(n/mx*100)+'%"></div></div><span class="v">'+n+'</span></div>'}).join('')+'</div></section></div>';
+  if(!S.cli.length&&!S.ops.length)html+='<section class="panel"><h2>Para empezar</h2><ol class="steps"><li>Carga tus primeros clientes en <b>Clientes</b>, con código AGX-001 y nombre de pila.</li><li>Crea una oportunidad por cada visita, consulta o cotización, con la fecha del último contacto.</li><li>Cada lunes abre <b>Lunes</b>: ahí están los seguimientos con el mensaje listo.</li></ol></section>';
+  return html;
+}
+function vLunes(){
+  const sg=seguidor();
+  let html=topbar('Ventana del lunes','Seguimientos de la semana ordenados por monto. Revisa, copia y envía tú: nada sale solo.','<span class="tag">'+sg.conPaso+' de '+sg.abiertas+' con próximo paso vigente</span>');
+  html+='<section class="panel"><header><h2>Seguimientos ('+sg.lista.length+')</h2>'+'<span class="status">Borradores con plantilla: revísalos antes de enviar</span>'+'</header>';
+  html+=sg.lista.length?sg.lista.map(it=>{const o=it.o,d=S.drafts[o.id];return '<div class="item"><div><div class="who">'+esc(nomCli(o))+' <span class="tag '+it.cls+'">'+esc(it.tipo)+'</span>'+(it.ventana?' <span class="tag a">Ventana ≤7 días</span>':'')+'</div><div class="sub">'+esc([o.producto,o.cultivo,o.etapa].filter(Boolean).join(' · '))+' · último contacto '+fmt(o.ultimoContacto)+' · toques '+(+o.toques||0)+'/3</div></div><div class="amt">'+clp(o.monto)+'</div>'+(d?'<div class="draft">'+esc(d)+'</div>':'')+'<div class="acts"><button class="btn sm" data-draft="'+esc(o.id)+'">'+(d?'Rehacer mensaje':'Redactar mensaje')+'</button>'+(d?'<button class="btn sm alt" data-copy="'+esc(o.id)+'">Copiar</button>':'')+'<button class="btn sm alt" data-sent="'+esc(o.id)+'">Marcar enviado</button><button class="btn sm alt" data-op="'+esc(o.id)+'">Abrir</button></div></div>'}).join(''):'<div class="empty">No hay seguimientos pendientes esta semana.</div>';
+  html+='</section><div class="grid2"><section class="panel"><header><h2>Esperan tu decisión ('+sg.decision.length+')</h2></header>'+(sg.decision.length?sg.decision.map(x=>'<div class="item"><div><div class="who">'+esc(nomCli(x.o))+'</div><div class="sub">'+esc(x.motivo)+'</div></div><div class="amt">'+clp(x.o.monto)+'</div><div class="acts"><button class="btn sm alt" data-op="'+esc(x.o.id)+'">Decidir</button></div></div>').join(''):'<div class="empty">Nada espera decisión.</div>')+'</section>';
+  html+='<section class="panel"><header><h2>Sin próximo paso ('+sg.sinPaso.length+')</h2></header>'+(sg.sinPaso.length?sg.sinPaso.map(o=>'<div class="item"><div><div class="who">'+esc(nomCli(o))+'</div><div class="sub">'+esc(o.etapa)+' · sin fecha acordada ni próximo paso</div></div><div class="amt">'+clp(o.monto)+'</div><div class="acts"><button class="btn sm alt" data-op="'+esc(o.id)+'">Agregar próximo paso</button></div></div>').join(''):'<div class="empty">Todas tienen próximo paso.</div>')+'</section></div>';
+  return html;
+}
+function vTablero(){
+  const f=S.fResp||'';
+  let html=topbar('Tablero comercial','Cada tarjeta es una oportunidad. En rojo, más de 10 días sin contacto.','<button class="btn" data-new="op">Nueva oportunidad</button>');
+  html+='<div class="toolbar"><select id="fResp" aria-label="Responsable"><option value="">Todos los responsables</option>'+RESP.map(r=>'<option'+(r===f?' selected':'')+'>'+r+'</option>').join('')+'</select></div><div class="board">';
+  for(const e of ETAPAS){
+    const list=S.ops.filter(o=>o.etapa===e&&(!f||o.responsable===f)).sort((a,b)=>(+b.monto||0)-(+a.monto||0));
+    const tot=list.reduce((a,o)=>a+(+o.monto||0),0);
+    html+='<div class="col"><h3><span>'+e+'</span><span>'+list.length+'</span></h3>'+(list.length?'':'<div class="empty" style="font-size:13px">Vacía</div>')+list.map(o=>{const d=o.ultimoContacto?days(o.ultimoContacto,today()):null;const late=abierta(o)&&d!==null&&d>10;return '<button class="card'+(late?' late':'')+'" data-op="'+esc(o.id)+'"><div style="display:flex;justify-content:space-between;gap:6px"><b>'+esc(nomCli(o))+'</b><span class="m">'+clp(o.monto)+'</span></div><div class="d">'+esc(o.producto||o.necesidad||'')+'</div><div class="d">'+(d===null?'Sin contacto registrado':d+(d===1?' día':' días')+' sin contacto')+(o.fechaAcordada?' · acordado '+fmt(o.fechaAcordada):'')+'</div></button>'}).join('')+(list.length?'<div class="d" style="padding:4px 6px;font-size:13px;color:var(--muted)">Total '+clp(tot)+'</div>':'')+'</div>';
+  }
+  return html+'</div>';
+}
+function vClientes(){
+  const q=(S.q||'').toLowerCase();
+  const list=S.cli.filter(c=>!q||[c.id,c.nombre,c.comuna,c.cultivos].join(' ').toLowerCase().includes(q));
+  let html=topbar('Clientes','Ficha de cada productor. Solo código y nombre de pila: nada de RUT ni datos bancarios.','<button class="btn" data-new="cli">Nuevo cliente</button>');
+  html+='<div class="toolbar"><input id="q" type="search" placeholder="Buscar por nombre, comuna o cultivo" value="'+esc(S.q||'')+'"></div>';
+  html+='<section class="panel">'+(list.length?'<table class="stack"><thead><tr><th>Código</th><th>Nombre</th><th>Comuna</th><th>Cultivos</th><th>Ha</th><th>Compras</th><th>Estado</th></tr></thead><tbody>'+list.map(c=>'<tr class="click" data-cli="'+esc(c.id)+'"><td>'+esc(c.id)+'</td><td><b>'+esc(c.nombre)+'</b></td><td>'+esc(c.comuna)+'</td><td>'+esc(c.cultivos)+'</td><td class="n">'+esc(c.ha||'')+'</td><td class="n">'+(+c.comprasContado||0)+'</td><td>'+(c.deuda?'<span class="tag r">Deuda vencida</span> ':'')+(c.contactable===false?'<span class="tag r">No contactar</span> ':'')+((+c.comprasContado||0)>=3?'<span class="tag">Apto crédito</span>':'<span class="tag o">Solo contado</span>')+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">'+(S.cli.length?'Sin resultados.':'Aún no hay clientes. Crea el primero con "Nuevo cliente".')+'</div>')+'</section>';
+  return html;
+}
+const OBJ={
+'Está más caro que en la agrícola':'Comparemos por hectárea y no por envase: ¿qué producto y dosis le cotizaron? Lo nuestro incluye la visita y el seguimiento en el predio.',
+'¿Me hace un descuento?':'El precio es el de lista. Puedo revisar la cantidad o el momento de entrega. ¿Qué le pesa más, el monto o la fecha de pago?',
+'¿Me lo deja a crédito?':'Con clientes nuevos partimos al contado; después de tres compras abrimos crédito a 30 días.',
+'Le pago a la cosecha':'Hoy el plazo máximo es 30 días. Lo converso y le confirmo: no quiero prometer algo que no pueda cumplir.',
+'Ya le compro a otro distribuidor':'No le propongo cambiar todo: probemos en un sector del predio y usted compara.',
+'Esos bioestimulantes no sirven':'Probémoslo usted mismo: un sector con el producto y otro sin él, y lo evaluamos juntos en una fecha.',
+'Ahora no, después de la cosecha':'¿Cuándo parte su próxima aplicación? Le escribo unos días antes.',
+'Lo tengo que ver con mi socio o mi hijo':'Le preparo un resumen corto con producto, dosis de etiqueta, costo por hectárea y condiciones. ¿Paso cuando estén los dos?'};
+function vVisita(){
+  const sel=S.visita;
+  let html=topbar('Preparar visita','Una página para leer en 5 minutos en la camioneta, antes de llegar al predio.');
+  html+='<div class="toolbar"><select id="vSel" aria-label="Cliente"><option value="">Elige el cliente a visitar</option>'+S.cli.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.id+' · '+(c.nombre||''))+'</option>').join('')+'</select>'+(sel&&S.sample?'<button class="btn oc" id="vAi">Afinar con Claude</button>':'')+'</div>';
+  const c=S.cli.find(x=>x.id===sel);
+  if(!c)return html+'<div class="panel empty">Elige un cliente para armar la hoja de pre-visita.</div>';
+  const ops=S.ops.filter(o=>o.clienteId===c.id),ab=ops.filter(abierta),gan=ops.filter(o=>o.etapa==='ganada'),per=ops.filter(o=>o.etapa==='perdida');
+  const sd=v=>v?esc(v):'<i style="color:var(--muted)">SIN DATO: preguntar</i>';
+  html+='<article class="sheet"><div class="head"><img src="logo-color.png" alt="Agrovex"><div><h2>Pre-visita · '+esc(c.nombre||c.id)+'</h2><div class="status">'+esc(c.id)+' · '+esc(c.comuna||'')+' · '+new Date().toLocaleDateString('es-CL')+'</div></div></div>';
+  if(c.deuda)html+='<div class="alert r">Tiene deuda vencida: no cotizar ni ofrecer crédito sin decisión del GG. Conversar primero la cobranza.</div>';
+  if(c.contactable===false)html+='<div class="alert r">Marcado "no contactar".</div>';
+  html+='<h3>Qué se sabe</h3><ul><li>Superficie: '+sd(c.ha&&c.ha+' ha')+' · Sector: '+sd(c.sector)+'</li><li>Cultivos: '+sd(c.cultivos)+' · Temporada de compra: '+sd(c.temporada)+'</li><li>Compras al contado: '+(+c.comprasContado||0)+' · '+((+c.comprasContado||0)>=3?'apto para crédito a 30 días':'solo contado (crédito tras 3 compras)')+'</li><li>Quién decide: '+sd(c.decide)+'</li><li>Historial: '+gan.length+' ganadas, '+per.length+' perdidas'+(per.length?' ('+esc(per.map(o=>o.cierre&&o.cierre.motivo).filter(Boolean).join(', '))+')':'')+'</li>'+ab.map(o=>'<li>Abierta: '+esc(o.producto||o.necesidad||'oportunidad')+' · '+esc(o.etapa)+' · '+clp(o.monto)+(o.fechaAcordada?' · acordado '+fmt(o.fechaAcordada):'')+'</li>').join('')+(c.notas?'<li>Notas: '+esc(c.notas)+'</li>':'')+'</ul>';
+  html+='<h3>Cultivo y momento</h3><p>'+(ab[0]&&ab[0].necesidad?'Necesidad detectada: '+esc(ab[0].necesidad)+'. ':'')+'Confirmar en terreno el estado fenológico y la próxima aplicación. Sin recomendación de dosis fuera de etiqueta.</p>';
+  html+='<h3>5 preguntas</h3><ol><li>¿Cuándo parte su próxima aplicación en '+esc((c.cultivos||'el cultivo').split(',')[0])+'?</li><li>¿Qué le funcionó y qué no la temporada pasada?</li><li>¿Con quién compra hoy y qué valora de ese proveedor?</li><li>'+(c.decide?'¿'+esc(c.decide)+' estará en la decisión?':'¿Quién más participa en la decisión de compra?')+'</li><li>¿Le acomoda probar en un sector y evaluarlo juntos en una fecha?</li></ol>';
+  html+='<h3>Objeciones probables</h3><ul>'+Object.entries(OBJ).slice(0,3).map(([k,v])=>'<li><b>'+esc(k)+':</b> '+esc(v)+'</li>').join('')+'</ul>';
+  html+='<h3>Qué llevar</h3><ul><li>Fichas técnicas y etiquetas de '+esc(ab.map(o=>o.producto).filter(Boolean).join(', ')||'los productos de interés')+'</li><li>Lista de precios vigente (si no está, la cotización sale con SIN PRECIO)</li><li>Resultados de ensayos, si los hay</li></ul>';
+  html+='<h3>Compromiso a buscar</h3><p>Salir con una fecha concreta de próximo paso y anotarla en la oportunidad.</p>';
+  if(S.visitaAi&&S.visitaAi.id===c.id)html+='<h3>Notas de Claude</h3><div class="draft">'+esc(S.visitaAi.text)+'</div>';
+  html+='<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-new="op" data-cli-for="'+esc(c.id)+'">Registrar oportunidad de esta visita</button><button class="btn alt" data-cli="'+esc(c.id)+'">Editar ficha</button></div></article>';
+  return html;
+}
+async function afinarVisita(){
+  const c=S.cli.find(x=>x.id===S.visita);if(!c||!S.sample)return;
+  const ops=S.ops.filter(o=>o.clienteId===c.id).map(o=>({etapa:o.etapa,producto:o.producto,cultivo:o.cultivo,necesidad:o.necesidad,monto:o.monto,fecha_acordada:o.fechaAcordada,cierre:o.cierre,notas:o.notas}));
+  S.visitaAi={id:c.id,text:'Pensando…'};render();
+  try{const r=await S.sample('Eres el Preparador de visitas de Agrovex (insumos agrícolas, O\'Higgins, Chile). Con SOLO estos datos, escribe en español de Chile, en máximo 120 palabras: 3 focos para la visita y las 2 objeciones más probables con una respuesta breve. '+REGLAS+' Lo que no esté en los datos va como pregunta, nunca como hecho.\nCliente: '+JSON.stringify({comuna:c.comuna,ha:c.ha,cultivos:c.cultivos,temporada:c.temporada,compras_contado:c.comprasContado,deuda_vencida:!!c.deuda,decide:c.decide,notas:c.notas})+'\nOportunidades: '+JSON.stringify(ops),{modelTier:'quick'});S.visitaAi={id:c.id,text:(r&&r.text||'').trim()}}catch(e){S.visitaAi=null;toast('Claude no está disponible ahora')}
+  render();
+}
+function vCierre(){
+  const t=today(),per=S.periodo||periodoDe(t);
+  const pers=[...new Set([periodoDe(t)].concat(S.ops.filter(o=>o.cierre&&o.cierre.fecha).map(o=>periodoDe(o.cierre.fecha))).concat(S.ops.map(o=>periodoDe(o.fechaAlta)).filter(Boolean)))].sort().reverse();
+  const enP=o=>o.cierre&&periodoDe(o.cierre.fecha)===per;
+  const gan=S.ops.filter(o=>o.etapa==='ganada'&&enP(o)),per_=S.ops.filter(o=>o.etapa==='perdida'&&enP(o));
+  const altas=S.ops.filter(o=>periodoDe(o.fechaAlta)===per);
+  const mg=gan.reduce((a,o)=>a+(+o.cierre.monto||0),0),ha=gan.reduce((a,o)=>a+(+o.cierre.ha||0),0),cont=gan.filter(o=>o.cierre.pago==='contado').reduce((a,o)=>a+(+o.cierre.monto||0),0);
+  const cot=altas.filter(o=>!['prospecto','consulta','visita realizada','ensayo en curso'].includes(o.etapa)||o.cotizada).length;
+  let html=topbar('Cierre del mes','Período de comisiones: '+rangoPeriodo(per)+'.','<select id="pSel" aria-label="Período">'+pers.map(p=>'<option'+(p===per?' selected':'')+'>'+p+'</option>').join('')+'</select>');
+  html+='<div class="kpis"><div class="kpi"><b>'+clp(mg)+'</b><span>ganado en '+gan.length+(gan.length===1?' venta':' ventas')+'</span></div><div class="kpi"><b>'+ha.toLocaleString('es-CL',{maximumFractionDigits:1})+' ha</b><span>hectáreas captadas</span></div><div class="kpi oc"><b>'+(mg?Math.round(cont/mg*100):0)+'%</b><span>del monto ganado al contado</span></div><div class="kpi '+(per_.length?'warn':'')+'"><b>'+clp(per_.reduce((a,o)=>a+(+o.cierre.monto||+o.monto||0),0))+'</b><span>perdido en '+per_.length+(per_.length===1?' oportunidad':' oportunidades')+'</span></div></div>';
+  const fun=[['Oportunidades nuevas',altas.length],['Llegaron a cotización',cot],['Ganadas',altas.filter(o=>o.etapa==='ganada').length]];
+  const mx=Math.max(1,fun[0][1]);
+  html+='<div class="grid2"><section class="panel"><header><h2>Embudo del período</h2></header><div class="bars">'+fun.map(([k,v],i)=>'<div class="row"><span>'+k+'</span><div class="track"><div class="fill'+(i===2?' o':'')+'" style="width:'+(v/mx*100)+'%"></div></div><span class="v">'+v+'</span></div>').join('')+'</div><p class="status">'+(altas.length?'De cada 10 oportunidades nuevas, '+Math.round(cot/altas.length*10)+' llegaron a cotización y '+Math.round(altas.filter(o=>o.etapa==='ganada').length/altas.length*10)+' se ganaron.':'Sin oportunidades nuevas en el período.')+'</p></section>';
+  const mot=MOTIVOS.concat(['sin motivo']).map(m=>[m,per_.filter(o=>(o.cierre.motivo||'sin motivo')===m).length]).filter(x=>x[1]);
+  const mm=Math.max(1,...mot.map(x=>x[1]));
+  html+='<section class="panel"><header><h2>Se perdieron por</h2></header>'+(mot.length?'<div class="bars">'+mot.map(([k,v])=>'<div class="row"><span>'+k+'</span><div class="track"><div class="fill o" style="width:'+(v/mm*100)+'%"></div></div><span class="v">'+v+'</span></div>').join('')+'</div>':'<div class="empty">Sin ventas perdidas en el período.</div>')+'</section></div>';
+  const etapas=[['oportunidades nuevas',altas.length],['cotización',cot],['ganadas',altas.filter(o=>o.etapa==='ganada').length]];
+  let caida='';if(altas.length){const d1=etapas[0][1]-etapas[1][1],d2=etapas[1][1]-etapas[2][1];caida=d1>=d2?'Entre la visita o consulta y la cotización ('+d1+' no llegaron a cotizar).':'Entre la cotización y el cierre ('+d2+' cotizaciones sin ganar).'}
+  const top=mot.slice().sort((x,y)=>y[1]-x[1])[0];const sinM=per_.filter(o=>!o.cierre.motivo).length;
+  html+='<section class="panel"><header><h2>Lectura del mes</h2><button class="btn sm alt" id="exp">Exportar a Excel</button></header><ol><li><b>Dónde se cae más:</b> '+(caida||'sin oportunidades nuevas en el período.')+'</li><li><b>Por qué:</b> '+(top?'el motivo más repetido es "'+esc(top[0])+'" ('+top[1]+').':'no hay pérdidas registradas.')+(sinM?' Hay '+sinM+' pérdidas sin motivo: cárgalo.':'')+'</li><li><b>Qué probar:</b> '+(top&&top[0]==='precio'?'comparar por costo por hectárea y proponer ensayos acotados antes de cotizar.':top&&top[0]==='no contestó más'?'dejar siempre una fecha acordada al cerrar cada visita.':top&&top[0]==='plazo de pago'?'explicar la regla de crédito desde la primera visita.':'revisar en la reunión del lunes las oportunidades sin próximo paso.')+'</li></ol><p class="status">Exporta los datos a Excel para el informe a socios, o súbelos a Claude para un análisis más profundo.</p></section>';
+  return html;
+}
+async function lecturaCierre(){
+  const per=S.periodo||periodoDe(today());const enP=o=>o.cierre&&periodoDe(o.cierre.fecha)===per;
+  const datos={periodo:per,nuevas:S.ops.filter(o=>periodoDe(o.fechaAlta)===per).length,ganadas:S.ops.filter(o=>o.etapa==='ganada'&&enP(o)).map(o=>({monto:o.cierre.monto,ha:o.cierre.ha,pago:o.cierre.pago})),perdidas:S.ops.filter(o=>o.etapa==='perdida'&&enP(o)).map(o=>({monto:o.monto,motivo:o.cierre.motivo||'sin motivo'})),abiertas_por_etapa:ABIERTAS.map(e=>[e,S.ops.filter(o=>o.etapa===e).length])};
+  S.cierreAi={per,text:'Analizando…'};render();
+  try{const r=await S.sample('Eres el Analista comercial de Agrovex. Con SOLO estos datos escribe exactamente 3 líneas en español de Chile: 1) dónde se caen más las ventas, 2) por qué, según los motivos registrados (no inventes motivos; si hay "sin motivo", pide cargarlos), 3) qué probar el próximo período. Sin cifras que no estén en los datos.\n'+JSON.stringify(datos),{modelTier:'quick'});S.cierreAi={per,text:(r&&r.text||'').trim()}}catch(e){S.cierreAi=null;toast('Claude no está disponible ahora')}
+  render();
+}
+function vGuia(){
+  const sit=[['"Está más caro que en la agrícola"','Comparar por hectárea, no por envase. Nunca bajar el precio por reflejo.'],['"¿Me hace un descuento?"','Solo descuentos definidos. Si no hay, decide el GG.'],['"¿Me lo deja a crédito?" (nuevo)','Contado primero; crédito a 30 días tras 3 compras al contado.'],['"Le pago a la cosecha"','Plazo máximo 30 días. Va a decisión del GG.'],['"Ya le compro a otro"','Proponer un ensayo acotado. Si no, pausada hasta antes de su temporada.'],['"Esos bioestimulantes no sirven"','Ensayo con testigo y fecha de evaluación. Nunca prometer resultados.'],['"Ahora no, después de la cosecha"','Registrar su temporada y una fecha acordada antes de la ventana.'],['"Lo veo con mi socio / hijo"','Resumen de una página y visita con quien decide.'],['"Mándeme la lista de precios"','Preguntar cultivo y hectáreas; proponer visita.'],['"¿Qué me recomienda para esta plaga?"','Visita primero. Ninguna dosis sin diagnóstico ni etiqueta.'],['No contesta la cotización','La app sigue la fecha acordada o la secuencia 3 hábiles, 10 y 20 días.'],['Cliente con deuda pide más','Cobranza primero; decide el GG.']];
+  let html=topbar('Guía de uso','Todo lo que necesitas para usar el sistema comercial de Agrovex, en una página.');
+  html+='<div class="guide">';
+  html+='<details open><summary>La regla de oro</summary><p><b>La app prepara, Agrovex decide y envía.</b> La app ordena, recuerda y redacta. Enviar un mensaje, fijar un precio, dar un descuento u otorgar crédito lo hace siempre una persona.</p></details>';
+  html+='<details open><summary>Tu semana en 4 momentos</summary><ol class="steps"><li><b>Lunes, 20 minutos con Carlos.</b> Abre <i>Lunes</i>: redacta cada mensaje, ajústalo, cópialo a WhatsApp y toca <i>Marcar enviado</i>. Luego revisa "Esperan tu decisión" y "Sin próximo paso".</li><li><b>Antes de cada visita, 5 minutos.</b> Abre <i>Visita</i>, elige el cliente y lee la hoja en la camioneta.</li><li><b>Después de cada visita o llamada.</b> Abre la oportunidad, actualiza la etapa, la fecha del último contacto y la fecha acordada.</li><li><b>Cada 26, 30 minutos.</b> Abre <i>Cierre</i>: embudo, hectáreas captadas, motivos de pérdida y la lectura de Claude.</li></ol></details>';
+  html+='<details><summary>Cómo registrar bien una oportunidad</summary><ul><li>Una por cada visita, consulta o cotización, con su cliente.</li><li><b>Último contacto</b>: el dato más importante. Sin él la app no sabe a quién le toca.</li><li><b>Fecha acordada</b>: la que pactaste con el productor. Manda sobre la secuencia de días.</li><li><b>Ventana de aplicación</b>: hasta cuándo puede aplicar. Es la única urgencia válida en los mensajes.</li><li>Al cerrar, toca <i>Ganada</i> o <i>Perdida</i>. Toda pérdida lleva motivo.</li></ul></details>';
+  html+='<details><summary>Etapas</summary><p>'+ETAPAS.map(e=>'<span class="tag" style="margin:3px">'+e+'</span>').join(' ')+'</p><p>Después de 3 toques sin respuesta, la oportunidad pasa a <b>pausada</b> con motivo "no contestó más".</p></details>';
+  html+='<details><summary>Reglas que no se rompen</summary><ol><li>Ningún dato inventado: lo que falta es SIN DATO.</li><li>Ningún precio, descuento ni plazo fuera de la lista vigente.</li><li>Nada se envía solo: todo es borrador.</li><li>Sin presión inventada; máximo 3 toques.</li><li>Crédito solo con 3 compras al contado, a 30 días como máximo.</li><li>Cliente con deuda vencida: no se cotiza ni se da crédito sin el GG.</li><li>Ninguna dosis, mezcla ni carencia fuera de la etiqueta.</li><li>"No contactar" es definitivo, por cualquier canal.</li></ol></details>';
+  html+='<details><summary>Situaciones con productores</summary><table class="stack"><thead><tr><th>Situación</th><th>Qué hacer</th></tr></thead><tbody>'+sit.map(([a,b])=>'<tr><td><b>'+a+'</b></td><td>'+b+'</td></tr>').join('')+'</tbody></table></details>';
+  html+='<details><summary>Datos y privacidad</summary><p>Clientes por código (AGX-001) y nombre de pila. Nunca RUT, datos bancarios ni documentos de identidad. Los datos viven en esta app y solo los ven las personas con quienes la compartas.</p></details>';
+  html+='<details><summary>Instalar la app en el teléfono</summary><ol><li><b>iPhone:</b> abre el enlace en Safari, toca Compartir y luego "Agregar a pantalla de inicio".</li><li><b>Android:</b> abre el enlace en Chrome, toca el menú de tres puntos y luego "Instalar app" o "Agregar a pantalla principal".</li><li>Entra con tu correo y contraseña. La sesión queda abierta.</li></ol></details><details><summary>Sin señal en el predio</summary><p>Puedes registrar visitas y cambios sin señal. Se guardan en el teléfono y se sincronizan solos cuando vuelve la cobertura. Arriba verás el aviso "Sin señal: se sincroniza al volver".</p></details><details><summary>Exportar a Excel</summary><p>En <i>Cierre</i>, el botón "Exportar a Excel" descarga dos archivos: oportunidades y clientes. Sirven para el informe a socios o para pedir un análisis a Claude.</p></details>';
+  return html+'</div>';
+}
+
+/* ---------- formularios ---------- */
+const opt=(arr,v)=>arr.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join('');
+function open(html){$('modal').innerHTML=html;$('ov').classList.add('show');const f=$('modal').querySelector('input,select,textarea');if(f)f.focus()}
+function close(){$('ov').classList.remove('show')}
+function head(t){return '<header><svg aria-hidden="true"><use href="#iso"/></svg><h2>'+t+'</h2></header>'}
+function nextOpId(){let m=0;for(const o of S.ops){const n=+(String(o.id).match(/(\d+)$/)||[])[1];if(n>m)m=n}return 'OP-'+String(m+1).padStart(4,'0')}
+function nextCliId(){let m=0;for(const c of S.cli){const n=+(String(c.id).match(/(\d+)$/)||[])[1];if(n>m)m=n}return 'AGX-'+String(m+1).padStart(3,'0')}
+function editarOp(id,aviso,cliFor){
+  const o=S.ops.find(x=>x.id===id)||{etapa:'prospecto',fechaAlta:today(),ultimoContacto:today(),toques:0,responsable:RESP[0],clienteId:cliFor||''};
+  const isNew=!id,c=S.cli.find(x=>x.id===o.clienteId);
+  if(!S.cli.length){open(head('Primero un cliente')+'<p>Para crear una oportunidad necesitas al menos un cliente.</p><div class="mfoot"><button class="btn alt" data-close>Cancelar</button><button class="btn" data-new="cli">Crear cliente</button></div>');return}
+  let h=head(isNew?'Nueva oportunidad':esc(o.id)+' · '+esc(nomCli(o)));
+  if(aviso)h+='<div class="alert g">'+esc(aviso)+'</div>';
+  if(c&&c.deuda)h+='<div class="alert r">Este cliente tiene deuda vencida: no cotizar ni dar crédito sin decisión del GG.</div>';
+  if(c&&c.contactable===false)h+='<div class="alert r">Cliente marcado "no contactar".</div>';
+  h+='<form class="form" id="fOp"><label class="full">Cliente<select name="clienteId" required>'+S.cli.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===o.clienteId?' selected':'')+'>'+esc(x.id+' · '+(x.nombre||''))+'</option>').join('')+'</select></label>';
+  h+='<label>Etapa<select name="etapa">'+opt(ETAPAS.filter(e=>e!=='ganada'&&e!=='perdida'||o.etapa===e),o.etapa)+'</select></label><label>Responsable<select name="responsable">'+opt(RESP,o.responsable)+'</select></label>';
+  h+='<label>Cultivo<input name="cultivo" value="'+esc(o.cultivo)+'" placeholder="ciruelo, tomate…"></label><label>Ha del cultivo<input name="haCultivo" type="number" step="0.1" min="0" value="'+esc(o.haCultivo)+'"></label>';
+  h+='<label class="full">Necesidad detectada<input name="necesidad" value="'+esc(o.necesidad)+'"></label><label>Producto de interés<input name="producto" value="'+esc(o.producto)+'"></label><label>Monto estimado (CLP)<input name="monto" type="number" step="1000" min="0" value="'+esc(o.monto)+'"></label>';
+  h+='<label>Último contacto<input name="ultimoContacto" type="date" value="'+esc(o.ultimoContacto)+'"></label><label>Fecha acordada próximo contacto<input name="fechaAcordada" type="date" value="'+esc(o.fechaAcordada)+'"></label>';
+  h+='<label>Ventana de aplicación (hasta)<input name="ventana" type="date" value="'+esc(o.ventana)+'"></label><label>Toques (0 a 3)<input name="toques" type="number" min="0" max="3" value="'+esc(o.toques||0)+'"></label>';
+  h+='<label class="full">Próximo paso<input name="proximoPaso" value="'+esc(o.proximoPaso)+'" placeholder="Ej.: enviar cotización y proponer ensayo"></label><label>Fuente del dato<select name="fuente">'+opt([''].concat(FUENTES),o.fuente)+'</select></label><label>Fecha de alta<input name="fechaAlta" type="date" value="'+esc(o.fechaAlta)+'"></label>';
+  h+='<label class="full">Notas<textarea name="notas">'+esc(o.notas)+'</textarea></label></form>';
+  if(o.historial&&o.historial.length)h+='<p class="status">Historial: '+o.historial.slice(-5).map(x=>fmt(x.fecha)+' '+esc(x.nota)).join(' · ')+'</p>';
+  if(o.cierre)h+='<div class="alert g">Cerrada el '+fmt(o.cierre.fecha)+': '+clp(o.cierre.monto)+(o.cierre.ha?' · '+o.cierre.ha+' ha':'')+(o.cierre.motivo?' · motivo: '+esc(o.cierre.motivo):'')+'</div>';
+  h+='<div class="mfoot"><div style="display:flex;gap:8px;flex-wrap:wrap">'+(!isNew&&abierta(o)?'<button class="btn sm oc" data-win="'+esc(o.id)+'">Ganada</button><button class="btn sm alt" data-lose="'+esc(o.id)+'">Perdida</button>':'')+(!isNew&&!abierta(o)&&o.etapa!=='pausada'?'<button class="btn sm alt" data-reopen="'+esc(o.id)+'">Reabrir</button>':'')+'</div><div style="display:flex;gap:8px"><button class="btn alt" data-close>Cancelar</button><button class="btn" id="saveOp">Guardar</button></div></div>';
+  open(h);
+  $('saveOp').onclick=async e=>{e.preventDefault();const fd=new FormData($('fOp'));const d=Object.assign({},o);for(const [k,v] of fd)d[k]=v;
+    d.monto=+d.monto||0;d.toques=Math.max(0,Math.min(3,+d.toques||0));d.haCultivo=d.haCultivo===''?'':+d.haCultivo;
+    const nid=isNew?nextOpId():o.id;delete d.id;
+    if(!d.ultimoContacto){toast('Falta la fecha de último contacto');return}
+    if(await save('ops',nid,d)){close();toast(isNew?'Oportunidad creada':'Guardado')}};
+}
+function cerrarOp(id,res){
+  const o=S.ops.find(x=>x.id===id);if(!o)return;const c=cliOf(o)||{};const apto=(+c.comprasContado||0)>=3;
+  let h=head((res==='ganada'?'Ganada · ':'Perdida · ')+esc(nomCli(o)));
+  h+='<form class="form" id="fC"><label>Fecha de cierre<input name="fecha" type="date" value="'+today()+'"></label><label>Monto (CLP)<input name="monto" type="number" step="1000" min="0" value="'+esc(o.monto)+'"></label>';
+  if(res==='ganada'){h+='<label>Hectáreas captadas<input name="ha" type="number" step="0.1" min="0" value="'+esc(o.haCultivo)+'"></label><label>Pago<select name="pago"><option>contado</option>'+(apto?'<option>crédito 30 días</option>':'')+'</select></label>'+(apto?'':'<div class="alert a full">Solo contado: el cliente tiene '+(+c.comprasContado||0)+' compras al contado y el crédito parte con 3. Una excepción la decide el GG.</div>')+'<label class="full" style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" name="sumar" checked style="min-height:auto;width:20px;height:20px"> Sumar una compra al contado a la ficha del cliente (si el pago es contado)</label>'}
+  else h+='<label class="full">Motivo de pérdida<select name="motivo" required><option value="">Elige el motivo</option>'+opt(MOTIVOS,'')+'</select></label>';
+  h+='</form><div class="mfoot"><span></span><div style="display:flex;gap:8px"><button class="btn alt" data-close>Cancelar</button><button class="btn" id="saveC">Confirmar</button></div></div>';
+  open(h);
+  $('saveC').onclick=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData($('fC')));
+    if(res==='perdida'&&!f.motivo){toast('Toda pérdida lleva motivo');return}
+    const cierre={fecha:f.fecha||today(),monto:+f.monto||0};if(res==='ganada'){cierre.ha=+f.ha||0;cierre.pago=f.pago||'contado'}else cierre.motivo=f.motivo;
+    const d=Object.assign({},o,{etapa:res,cierre});delete d.id;
+    if(await save('ops',id,d)){if(res==='ganada'&&cierre.pago==='contado'&&f.sumar&&c.id){const cd=Object.assign({},c,{comprasContado:(+c.comprasContado||0)+1});delete cd.id;await save('clientes',c.id,cd)}close();toast(res==='ganada'?'¡Venta registrada!':'Pérdida registrada con su motivo')}};
+}
+function editarCli(id){
+  const c=S.cli.find(x=>x.id===id)||{comprasContado:0,tono:'usted',contactable:true,deuda:false,pago:'contado'};const isNew=!id;
+  let h=head(isNew?'Nuevo cliente':esc(c.id)+' · '+esc(c.nombre));
+  h+='<form class="form" id="fCl"><label>Código<input name="codigo" value="'+esc(isNew?nextCliId():c.id)+'" '+(isNew?'':'readonly')+'></label><label>Nombre de pila<input name="nombre" value="'+esc(c.nombre)+'" required></label>';
+  h+='<label>Comuna<select name="comuna">'+opt(COMUNAS,c.comuna)+'</select></label><label>Sector o predio<input name="sector" value="'+esc(c.sector)+'"></label>';
+  h+='<label>Ha totales<input name="ha" type="number" step="0.1" min="0" value="'+esc(c.ha)+'"></label><label>Cultivos<input name="cultivos" value="'+esc(c.cultivos)+'" placeholder="ciruelo, tomate"></label>';
+  h+='<label>Temporada de compra<input name="temporada" value="'+esc(c.temporada)+'" placeholder="sep–nov"></label><label>Compras al contado<input name="comprasContado" type="number" min="0" value="'+esc(c.comprasContado||0)+'"></label>';
+  h+='<label>Tono<select name="tono">'+opt(['usted','tú'],c.tono)+'</select></label><label>Quién decide<input name="decide" value="'+esc(c.decide)+'"></label>';
+  h+='<label>¿Deuda vencida?<select name="deuda">'+opt(['no','sí'],c.deuda?'sí':'no')+'</select></label><label>¿Se puede contactar?<select name="contactable">'+opt(['sí','no contactar'],c.contactable===false?'no contactar':'sí')+'</select></label>';
+  h+='<label class="full">Notas<textarea name="notas" placeholder="Qué le importa, cómo decide">'+esc(c.notas)+'</textarea></label></form>';
+  h+='<p class="status">'+((+c.comprasContado||0)>=3?'Apto para crédito a 30 días.':'Solo contado hasta completar 3 compras al contado.')+' Sin RUT ni datos bancarios.</p>';
+  h+='<div class="mfoot"><span></span><div style="display:flex;gap:8px"><button class="btn alt" data-close>Cancelar</button><button class="btn" id="saveCl">Guardar</button></div></div>';
+  open(h);
+  $('saveCl').onclick=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData($('fCl')));
+    const cid=(f.codigo||'').trim().toUpperCase();if(!cid||!f.nombre){toast('Falta código o nombre');return}
+    if(isNew&&S.cli.some(x=>x.id===cid)){toast('Ese código ya existe');return}
+    if(/\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]/.test(f.notas||'')){toast('Saca el RUT de las notas');return}
+    const d={nombre:f.nombre.trim(),comuna:f.comuna,sector:f.sector,ha:f.ha===''?'':+f.ha,cultivos:f.cultivos,temporada:f.temporada,comprasContado:+f.comprasContado||0,tono:f.tono,decide:f.decide,deuda:f.deuda==='sí',contactable:f.contactable!=='no contactar',notas:f.notas,pago:(+f.comprasContado||0)>=3?'crédito 30 días':'contado'};
+    if(await save('clientes',cid,d)){close();toast(isNew?'Cliente creado':'Ficha guardada')}};
+}
+
+/* ---------- render y eventos ---------- */
+function route(){const h=location.hash.slice(1);return PAGES.some(p=>p[0]===h)?h:'inicio'}
+function render(){
+  const r=route();
+  const nav=PAGES.map(([k,l])=>'<a href="#'+k+'" class="'+(k===r?'on':'')+'"'+(k===r?' aria-current="page"':'')+'>'+ico(k)+'<span>'+l+'</span></a>').join('');
+  $('navSide').innerHTML=nav;$('navTabs').innerHTML=nav;
+  const m=$('main');
+  document.body.classList.toggle('out',!!(S.auth&&!S.user));
+  if(S.auth&&!S.user&&S.ready){m.innerHTML=vLogin();bindLogin();return}
+  if(!S.ready){m.innerHTML='<div class="empty"><svg width="56" height="56" aria-hidden="true"><use href="#iso"/></svg><br>Conectando con la base de datos…</div>';return}
+  const v={inicio:vInicio,lunes:vLunes,tablero:vTablero,clientes:vClientes,visita:vVisita,cierre:vCierre,guia:vGuia}[r];
+  const y=window.scrollY,a=document.activeElement&&document.activeElement.id;
+  m.innerHTML=(S.err?'<div class="alert r">'+esc(S.err)+'</div>':'')+(S.offline?'<div class="alert a">Sin señal: lo que registres se guarda en el teléfono y se sincroniza al volver.</div>':'')+'<div class="view'+(S.lastRoute===r?'" style="animation:none':'')+'">'+v()+'</div>';
+  if(S.lastRoute===r){window.scrollTo(0,y);if(a&&$(a)){const el=$(a);el.focus();if(el.setSelectionRange&&el.type==='search'){const l=el.value.length;el.setSelectionRange(l,l)}}}else window.scrollTo(0,0);
+  S.lastRoute=r;
+}
+window.addEventListener('hashchange',render);
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-go],[data-new],[data-op],[data-cli],[data-draft],[data-copy],[data-sent],[data-close],[data-win],[data-lose],[data-reopen],#vAi,#cAi');if(!b)return;
+  const d=b.dataset;
+  if(d.go){location.hash=d.go}
+  else if(d.new==='op'){e.preventDefault();editarOp(null,'',d.cliFor||'')}
+  else if(d.new==='cli'){e.preventDefault();editarCli(null)}
+  else if(d.op){editarOp(d.op)}
+  else if(d.cli){editarCli(d.cli)}
+  else if(d.draft){redactar(d.draft)}
+  else if(d.copy){copiar(S.drafts[d.copy]||'')}
+  else if(d.sent){marcarEnviado(d.sent)}
+  else if('close' in d){e.preventDefault();close()}
+  else if(d.win){cerrarOp(d.win,'ganada')}
+  else if(d.lose){cerrarOp(d.lose,'perdida')}
+  else if(d.reopen){const o=S.ops.find(x=>x.id===d.reopen);if(o){const n=Object.assign({},o,{etapa:'seguimiento',ultimoContacto:today()});delete n.id;delete n.cierre;save('ops',o.id,n).then(ok=>{if(ok){close();toast('Reabierta')}})}}
+  else if(b.id==='vAi'){afinarVisita()}
+  else if(b.id==='cAi'){lecturaCierre()}
+});
+document.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;render()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='fResp'){S.fResp=t.value;render()}else if(t.id==='vSel'){S.visita=t.value;render()}else if(t.id==='pSel'){S.periodo=t.value;render()}});
+$('ov').addEventListener('click',e=>{if(e.target.id==='ov')close()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+function bindLogin(){
+  $('fLogin').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));$('lmsg').textContent='Entrando…';
+    try{await S.auth.signInWithEmailAndPassword(f.email.trim(),f.pass)}catch(err){$('lmsg').textContent=err.code==='auth/network-request-failed'?'Sin conexión. Intenta de nuevo con señal.':'Correo o contraseña incorrectos.'}};
+  $('reset').onclick=async()=>{const em=$('fLogin').email.value.trim();if(!em){$('lmsg').textContent='Escribe tu correo primero.';return}
+    try{await S.auth.sendPasswordResetEmail(em);$('lmsg').textContent='Te enviamos un correo para crear una nueva contraseña.'}catch(err){$('lmsg').textContent='No pudimos enviar el correo. Revisa la dirección.'}};
+}
+for(const id of ['logout','logoutM'])$(id).onclick=()=>S.auth&&S.auth.signOut();
+document.addEventListener('click',e=>{if(e.target.closest('#exp'))exportar()});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+render();boot();
+}
+</script>
+</body>
+</html>

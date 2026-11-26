@@ -1,0 +1,17 @@
+{
+  "name": "Agrovex Comercial",
+  "short_name": "Agrovex",
+  "description": "Sistema comercial de Agrovex: seguimiento, clientes, visitas y cierre del mes.",
+  "lang": "es-CL",
+  "start_url": "./index.html#inicio",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F2EA",
+  "theme_color": "#1B3A27",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

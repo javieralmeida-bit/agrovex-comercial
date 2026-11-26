@@ -1,0 +1,15 @@
+rules_version = '2';
+// Solo los correos de esta lista pueden leer y escribir los datos de Agrovex.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function equipo() {
+      return request.auth != null && request.auth.token.email in [
+        'javier.almeida@agrovex.cl',
+        'CORREO_DE_CARLOS@agrovex.cl'
+      ];
+    }
+    match /clientes/{id} { allow read, write: if equipo(); }
+    match /ops/{id} { allow read, write: if equipo(); }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
