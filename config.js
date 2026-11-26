@@ -5,6 +5,13 @@ window.AGROVEX_FIREBASE = {
   authDomain: "PEGAR.firebaseapp.com",
   projectId: "PEGAR",
   storageBucket: "PEGAR.appspot.com",
-  messagingSenderId: "PEGAR",
+  messagingSenderId: const firebaseConfig = {
+  apiKey: "AIzaSyBIg6PJsDLvIZzTDSAadRUUgpj5VzJKi0U",
+  authDomain: "agrovex-comercial.firebaseapp.com",
+  projectId: "agrovex-comercial",
+  storageBucket: "agrovex-comercial.firebasestorage.app",
+  messagingSenderId: "211301436488",
+  appId: "1:211301436488:web:9c4172461861fb6bcb9c7d"
+};,
   appId: "PEGAR"
 };
